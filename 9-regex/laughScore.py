@@ -4,8 +4,7 @@ import re
 def laugh_score(laugh: str) -> int:
     if m := re.search("ha[ah]*", laugh, re.IGNORECASE):
         return len(m.group())
-    else:
-        return 0
+    return 0
 
 
 assert laugh_score("abcdefg") == 0

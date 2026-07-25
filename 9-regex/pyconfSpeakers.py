@@ -12849,5 +12849,5 @@ speakers = speakers.splitlines()
 with open("speakers.tsv", "w", encoding="utf-8") as fout:
     fout.write("Speakers\tSpeechesGiven\n")
     for speaker in speakers:
-        col1, col2 = re.findall(r"(.*)\s+(\d*)", speaker)[0]
+        col1, col2 = re.findall(r"(.+)\s+(\d+)", speaker)[0]
         fout.write(f"{col1}\t{col2}\n")
