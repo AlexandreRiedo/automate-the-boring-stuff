@@ -13,4 +13,5 @@ with open("madLibs.out", "w") as fout:
         )
         out_text = out_text.replace(m.group(), usr_input, 1)
 
+    print(out_text)
     fout.write(out_text)
