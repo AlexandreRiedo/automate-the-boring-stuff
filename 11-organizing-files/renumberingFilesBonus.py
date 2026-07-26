@@ -9,14 +9,14 @@ os.chdir(Path.cwd() / "spam")
 
 paths = [
     path
-    for path in sorted(Path.iterdir(Path.cwd()), reverse=True)
+    for path in sorted(Path.cwd().iterdir(), reverse=True)
     if PATTERN.fullmatch(path.name)
 ]
 
 gap_size = len(GAPS)
 for path in paths:
     num = int(path.stem[-3:]) + gap_size
-    if num in GAPS:
+    while num in GAPS:
         gap_size -= 1
         num -= 1
     shutil.move(
