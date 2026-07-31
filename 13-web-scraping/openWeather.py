@@ -8,10 +8,10 @@ LON = 6.55694
 load_dotenv("../.env")
 API_KEY = os.getenv("API_OPENWEATHER")
 response = requests.get(
-    "https://api.openweathermap.org/data/4.0/onecall/current?",
+    "https://api.openweathermap.org/data/2.5/weather?",
     params={"lat": LAT, "lon": LON, "appid": API_KEY},
 )
 
-from rich import print as rprint
+from rich import print_json
 
-rprint(f"{response.text=}")
+print_json(response.text)
