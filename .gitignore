@@ -55,6 +55,7 @@ withLogo/
 # Ch. "Web Scraping" — downloadXkcdComics.py, showmap.py, searchpypi.py
 xkcd/
 downloads/
+artvee-images/
 
 # Ch. "PDF and Word" — combine_pdfs.py, extractpdfimages.py, watermarking
 allminutes.pdf
