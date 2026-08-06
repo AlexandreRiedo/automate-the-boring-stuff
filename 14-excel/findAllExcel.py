@@ -22,11 +22,12 @@ for excel_file in (x for x in Path.cwd().iterdir() if x.suffix == ".xlsx"):
                         found[f"{excel_file.name} - {sheet.title}"].append(
                             f"{gcl(col_idx)}{row_idx}"
                         )
+
+            if f"{excel_file.name} - {sheet.title}" in found:
+                rprint(
+                    f"[blue]{f'{excel_file.name} - {sheet.title}'}: [green]{found[f'{excel_file.name} - {sheet.title}']}\n"
+                )
     except Exception as e:
         rprint(f"{e}")
-
-if found:
-    for k, v in found.items():
-        rprint(f"[blue]{k}: [green]{v}\n")
-else:
+if not found:
     rprint("[red]Nothing found!")
