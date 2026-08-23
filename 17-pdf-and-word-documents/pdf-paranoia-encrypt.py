@@ -20,7 +20,7 @@ for root, dirs, files in os.walk(Path.cwd()):
 
             with open(pdf_encrypted_filename, "wb") as file:
                 writer.write(file)
-                rprint(f"[green]Wrote: [blue]{pdf_encrypted_filename}\n")
+                rprint(f"[green]Wrote: [blue]{pdf_encrypted_filename}")
 
             # Making sure one can decrypt it
             reader = pypdf.PdfReader(pdf_encrypted_filename)
@@ -30,4 +30,4 @@ for root, dirs, files in os.walk(Path.cwd()):
             # Deleting the unencrypted file
             send2trash(pdf_filename)
         except (OSError, ValueError, PdfReadError) as e:
-            rprint(f"[red]Error [blue]{pdf_encrypted_filename} with [green]{e}\n")
+            rprint(f"[red]Error [blue]{pdf_encrypted_filename} with [green]{e}")
