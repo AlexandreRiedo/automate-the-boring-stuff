@@ -61,7 +61,7 @@ imageDownloader-images/
 # Ch. "PDF and Word" — combine_pdfs.py, extractpdfimages.py, watermarking
 allminutes.pdf
 *_watermarked.pdf
-*_encrypted.pdf
+# *_encrypted.pdf
 extracted_images/
 
 # Ch. "CSV/JSON" — removeCsvHeader.py writes into a headerRemoved/ folder
