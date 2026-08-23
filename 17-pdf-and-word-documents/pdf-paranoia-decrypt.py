@@ -17,7 +17,9 @@ for root, dirs, files in os.walk(Path.cwd()):
 
                 # Create a decrypted copy
                 writer = pypdf.PdfWriter(clone_from=reader)
-                copy = pdf.parent / f"{pdf.name.removesuffix('_encrypted.pdf')}.pdf"
+                copy = pdf.parent / f"{pdf.stem.removesuffix('_encrypted')}.pdf"
+                if copy == pdf:
+                    copy = pdf.parent / f"{pdf.stem}_decrypted.pdf"
                 with open(copy, "wb") as file:
                     writer.write(file)
                     rprint(f"[green]Decryption successful for: [blue]{pdf}")
