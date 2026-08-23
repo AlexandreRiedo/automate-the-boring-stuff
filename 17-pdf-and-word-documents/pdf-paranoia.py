@@ -20,6 +20,4 @@ for root, dirs, files in os.walk(Path.cwd()):
                 writer.write(file)
                 rprint(f"[green]Wrote: [blue]{pdf_encrypted_filename}\n")
         except (OSError, ValueError, PdfReadError) as e:
-            rprint(
-                f"[red]Error dealing with [blue]{pdf_encrypted_filename} with [green]{e}\n"
-            )
+            rprint(f"[red]Error [blue]{pdf_encrypted_filename} with [green]{e}\n")
