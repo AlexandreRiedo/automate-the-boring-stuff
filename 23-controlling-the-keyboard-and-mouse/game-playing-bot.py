@@ -16,12 +16,13 @@ class Customer:
 
 
 CONF = 0.8
-CONF_FOOD = 0.6
-CONF_INGREDIENTS = 0.95
+CONF_COOKING = 0.95
+CONF_DISHES = 0.55
+CONF_RELAXED = 0.6
+PATH_COOKING = "screenshots/cooking"
 PATH_FOOD = "screenshots/food"
 PATH_LAUNCH = "screenshots/launch"
-PATH_INGREDIENTS = "screenshots/ingredients"
-POLL = 1
+POLL = 0.5
 TIME_HANDLE = 22
 
 # Launching the game
@@ -63,29 +64,37 @@ foods = {
     "onigiri",
     "gunkan",
 }
-cook = pag.locateOnScreen(f"{PATH_INGREDIENTS}/cook.png", confidence=CONF_INGREDIENTS)
-nori = pag.locateOnScreen(f"{PATH_INGREDIENTS}/nori.png", confidence=CONF_INGREDIENTS)
-rice = pag.locateOnScreen(f"{PATH_INGREDIENTS}/rice.png", confidence=CONF_INGREDIENTS)
-roe = pag.locateOnScreen(f"{PATH_INGREDIENTS}/roe.png", confidence=CONF_INGREDIENTS)
 
+makisu = pag.locateOnScreen(f"{PATH_COOKING}/makisu.png", confidence=CONF_COOKING)
+
+nori = pag.locateOnScreen(f"{PATH_COOKING}/nori.png", confidence=CONF_COOKING)
+rice = pag.locateOnScreen(f"{PATH_COOKING}/rice.png", confidence=CONF_COOKING)
+roe = pag.locateOnScreen(f"{PATH_COOKING}/roe.png", confidence=CONF_COOKING)
+
+frame = 0
 
 while True:
+    rprint(f"\n=====[orange]Frame {frame}=====")
+    frame += 1
+
     # Poll for any new customers
     pag.sleep(POLL)
     for food in foods:
         try:
             for new_box in pag.locateAllOnScreen(
-                f"{PATH_FOOD}/{food}.png", confidence=CONF_FOOD
+                f"{PATH_FOOD}/{food}.png", confidence=CONF_RELAXED
             ):
                 if not any(
-                    new_box.left - 25 < customer.box.left < new_box.left + 25
-                    for customer in customers
+                    new_box.left - 25 < c.box.left < new_box.left + 25
+                    for c in customers
                 ):
                     customers.append(Customer(new_box, food, None))
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
             rprint(f"[blue]No {food} found.")
 
-    # Deal with a customer
+    # TODO: assure that there's enough ingredients before cooking
+
+    # Serve a customer
     if any(not customer.is_handled for customer in customers):
         customer = next(c for c in customers if not c.is_handled)
         match customer.food:
@@ -93,30 +102,19 @@ while True:
                 pag.click(rice)
                 pag.click(nori)
                 pag.click(roe)
-                pag.sleep(0.5)
-
-                pag.click(cook)
-                customer.is_handled = True
-                customer.handled_time = time.time()
             case "onigiri":
                 pag.click(rice)
                 pag.click(rice)
                 pag.click(nori)
-                pag.sleep(0.5)
-
-                pag.click(cook)
-                customer.is_handled = True
-                customer.handled_time = time.time()
             case "gunkan":
                 pag.click(rice)
                 pag.click(nori)
                 pag.click(roe)
                 pag.click(roe)
-                pag.sleep(0.5)
-
-                pag.click(cook)
-                customer.is_handled = True
-                customer.handled_time = time.time()
+        pag.sleep(0.5)
+        pag.click(makisu)
+        customer.is_handled = True
+        customer.handled_time = time.time()
 
     # Remove stale served customers
     while (
@@ -126,6 +124,18 @@ while True:
     ):
         customers.popleft()
 
-    rprint()
+    # Removing dishes and turds
+    try:
+        for dish in pag.locateAllOnScreen(
+            f"{PATH_COOKING}/dish.png", confidence=CONF_DISHES
+        ):
+            pag.click(dish)
+        for turd in pag.locateAllOnScreen(
+            f"{PATH_COOKING}/turd.png", confidence=CONF_DISHES
+        ):
+            pag.click(turd)
+    except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+        rprint("[blue]No dishes or turds found.")
+
     for c in customers:
         rprint(f"{c}")
