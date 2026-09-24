@@ -75,10 +75,12 @@ frame = 0
 
 while True:
     rprint(f"\n=====[orange]Frame {frame}=====")
-    frame += 1
+    for c in customers:
+        rprint(f"{c}")
 
     # Poll for any new customers
     pag.sleep(POLL)
+    frame += 1
     for food in foods:
         try:
             for new_box in pag.locateAllOnScreen(
@@ -94,7 +96,7 @@ while True:
 
     # TODO: assure that there's enough ingredients before cooking
 
-    # Serve a customer
+    # Cook for a customer
     if any(not customer.is_handled for customer in customers):
         customer = next(c for c in customers if not c.is_handled)
         match customer.food:
@@ -136,6 +138,3 @@ while True:
             pag.click(turd)
     except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
         rprint("[blue]No dishes or turds found.")
-
-    for c in customers:
-        rprint(f"{c}")
