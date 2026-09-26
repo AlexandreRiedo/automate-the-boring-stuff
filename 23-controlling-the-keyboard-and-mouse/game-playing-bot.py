@@ -1,4 +1,3 @@
-import os
 import time
 from collections import deque
 from dataclasses import dataclass
@@ -26,8 +25,9 @@ PATH_COOKING = "screenshots/cooking"
 PATH_FOOD = "screenshots/food"
 PATH_LAUNCH = "screenshots/launch"
 PATH_ORDER = "screenshots/order"
-POLL = 0.25
+POLL = 0.5
 TIME_HANDLE = 25
+TIME_DELIVERY = 3
 
 
 # Launching the game
@@ -74,8 +74,9 @@ foods = {
     "onigiri",
     "gunkan",
 }
+ingredients = {"shrimp": 5, "rice": 10, "nori": 10, "roe": 10, "salmon": 5, "unagi": 5}
 bubbles = pag.locateOnScreen(f"{PATH_COOKING}/bubbles.png", confidence=CONF)
-belt = pag.locateOnScreen(f"{PATH_COOKING}/deck.png", confidence=CONF)
+belt = pag.locateOnScreen(f"{PATH_COOKING}/belt.png", confidence=CONF)
 deck = pag.locateOnScreen(f"{PATH_COOKING}/deck.png", confidence=CONF)
 panel = pag.locateOnScreen(f"{PATH_COOKING}/panel.png", confidence=CONF)
 phone = pag.locateOnScreen(f"{PATH_ORDER}/phone.png", confidence=CONF)
@@ -83,8 +84,9 @@ makisu = pag.locateOnScreen(f"{PATH_COOKING}/makisu.png", confidence=CONF)
 nori = pag.locateOnScreen(f"{PATH_COOKING}/nori.png", confidence=CONF_COOKING)
 rice = pag.locateOnScreen(f"{PATH_COOKING}/rice.png", confidence=CONF_COOKING)
 roe = pag.locateOnScreen(f"{PATH_COOKING}/roe.png", confidence=CONF_COOKING)
-frame = 0
 
+
+frame = 0
 while True:
     rprint(f"\n=====[orange]Frame {frame}=====")
     for c in customers:
@@ -102,23 +104,60 @@ while True:
                     box.left - 25 < c.box.left < box.left + 25 for c in customers
                 ):
                     customers.append(Customer(box, food, None))
+                    rprint(f"[blue]{food} found.")
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-            rprint(f"[blue]No {food} found.")
+            pass
 
     # TODO: assure that there's enough ingredients before cooking
-    for ing_img in os.listdir("screenshots/ingredients"):
-        try:
-            ing_loc = pag.locateOnScreen(
-                f"screenshots/ingredients/{ing_img}",
-                confidence=CONF_INGREDIENTS,
-                region=panel,
-            )
-            ing_name = ing_img.split(sep="-")[0]
-            rprint(f"[green]{ing_img} found.")
-
+    if any(qty < 2 for qty in ingredients.values()):
+        for ingredient, qty in [(i, q) for i, q in ingredients.items() if q < 2]:
+            rprint(f"[red]No more {ingredient}")
             pag.click(phone)
-        except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-            rprint(f"[blue]No {ing_img} found.")
+            pag.sleep(1)
+            if ingredient == "rice":
+                rice_menu = pag.locateOnScreen(
+                    f"{PATH_ORDER}/rice-menu.png", confidence=CONF, minSearchTime=2
+                )
+                pag.click(rice_menu)
+                rice_order = pag.locateOnScreen(
+                    f"{PATH_ORDER}/rice-order.png", confidence=CONF, minSearchTime=2
+                )
+                pag.click(rice_order)
+                delivery = pag.locateOnScreen(
+                    f"{PATH_ORDER}/delivery.png", confidence=CONF, minSearchTime=2
+                )
+                pag.click(delivery)
+                ingredients["rice"] += 10
+            elif ingredient == "nori":
+                nori_menu = pag.locateOnScreen(
+                    f"{PATH_ORDER}/topping-menu.png", confidence=CONF, minSearchTime=2
+                )
+                pag.click(nori_menu)
+                nori_order = pag.locateOnScreen(
+                    f"{PATH_ORDER}/nori-order.png", confidence=CONF, minSearchTime=2
+                )
+                pag.click(nori_order)
+                delivery = pag.locateOnScreen(
+                    f"{PATH_ORDER}/delivery.png", confidence=CONF, minSearchTime=2
+                )
+                pag.click(delivery)
+                ingredients["nori"] += 10
+            elif ingredient == "roe":
+                roe_menu = pag.locateOnScreen(
+                    f"{PATH_ORDER}/topping-menu.png", confidence=CONF, minSearchTime=2
+                )
+                pag.click(roe_menu)
+                roe_order = pag.locateOnScreen(
+                    f"{PATH_ORDER}/roe-order.png", confidence=CONF, minSearchTime=2
+                )
+                pag.click(roe_order)
+                delivery = pag.locateOnScreen(
+                    f"{PATH_ORDER}/delivery.png", confidence=CONF, minSearchTime=2
+                )
+                pag.click(delivery)
+                ingredients["roe"] += 10
+
+        pag.sleep(TIME_DELIVERY)
 
     # Cook for a customer
     if any(not customer.is_handled for customer in customers):
@@ -128,15 +167,26 @@ while True:
                 pag.click(rice)
                 pag.click(nori)
                 pag.click(roe)
+
+                ingredients["rice"] -= 1
+                ingredients["nori"] -= 1
+                ingredients["roe"] -= 1
             case "onigiri":
                 pag.click(rice)
                 pag.click(rice)
                 pag.click(nori)
+
+                ingredients["rice"] -= 2
+                ingredients["nori"] -= 1
             case "gunkan":
                 pag.click(rice)
                 pag.click(nori)
                 pag.click(roe)
                 pag.click(roe)
+
+                ingredients["rice"] -= 1
+                ingredients["nori"] -= 1
+                ingredients["roe"] -= 2
         pag.sleep(0.5)
         pag.click(makisu)
         customer.is_handled = True
@@ -160,5 +210,6 @@ while True:
             f"{PATH_COOKING}/turd.png", confidence=CONF_DISHES, region=belt
         ):
             pag.click(turd)
+        rprint("[blue]Dishes or turds found.")
     except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-        rprint("[blue]No dishes or turds found.")
+        pass
