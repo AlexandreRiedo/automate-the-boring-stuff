@@ -1,9 +1,11 @@
+import os
 import time
 from collections import deque
 from dataclasses import dataclass
 
 import pyautogui as pag
 import pyscreeze
+from pyautogui import locateAllOnScreen as loas
 from rich import print as rprint
 
 
@@ -17,13 +19,16 @@ class Customer:
 
 CONF = 0.8
 CONF_COOKING = 0.95
-CONF_DISHES = 0.55
+CONF_DISHES = 0.70
+CONF_INGREDIENTS = 0.95
 CONF_RELAXED = 0.6
 PATH_COOKING = "screenshots/cooking"
 PATH_FOOD = "screenshots/food"
 PATH_LAUNCH = "screenshots/launch"
-POLL = 0.5
-TIME_HANDLE = 22
+PATH_ORDER = "screenshots/order"
+POLL = 0.25
+TIME_HANDLE = 25
+
 
 # Launching the game
 firefox = pag.getWindowsWithTitle("Firefox")[0]  # pyright: ignore[reportAttributeAccessIssue]
@@ -39,8 +44,11 @@ pag.write("https://armorgames.com/play/124/sushi-go-round")
 pag.press("enter")
 pag.sleep(1)
 
-pag.click(f"{PATH_LAUNCH}/play-game.png")
-pag.sleep(7.5)
+play_game = pag.locateOnScreen(f"{PATH_LAUNCH}/play-game.png", confidence=CONF)
+pag.click(play_game)
+pag.sleep(5)
+pag.click(play_game)
+pag.sleep(2.5)
 
 sound = pag.locateOnScreen(f"{PATH_LAUNCH}/sound.png", confidence=CONF)
 pag.click(sound)
@@ -48,7 +56,9 @@ pag.click(sound)
 play = pag.locateOnScreen(f"{PATH_LAUNCH}/purple-play.png", confidence=CONF)
 pag.click(play)
 
-skip = pag.locateOnScreen(f"{PATH_LAUNCH}/yellow-skip.png", confidence=CONF)
+skip = pag.locateOnScreen(
+    f"{PATH_LAUNCH}/yellow-skip.png", confidence=CONF, minSearchTime=2
+)
 pag.click(skip)
 pag.sleep(0.5)
 
@@ -64,13 +74,15 @@ foods = {
     "onigiri",
     "gunkan",
 }
-
-makisu = pag.locateOnScreen(f"{PATH_COOKING}/makisu.png", confidence=CONF_COOKING)
-
+bubbles = pag.locateOnScreen(f"{PATH_COOKING}/bubbles.png", confidence=CONF)
+belt = pag.locateOnScreen(f"{PATH_COOKING}/deck.png", confidence=CONF)
+deck = pag.locateOnScreen(f"{PATH_COOKING}/deck.png", confidence=CONF)
+panel = pag.locateOnScreen(f"{PATH_COOKING}/panel.png", confidence=CONF)
+phone = pag.locateOnScreen(f"{PATH_ORDER}/phone.png", confidence=CONF)
+makisu = pag.locateOnScreen(f"{PATH_COOKING}/makisu.png", confidence=CONF)
 nori = pag.locateOnScreen(f"{PATH_COOKING}/nori.png", confidence=CONF_COOKING)
 rice = pag.locateOnScreen(f"{PATH_COOKING}/rice.png", confidence=CONF_COOKING)
 roe = pag.locateOnScreen(f"{PATH_COOKING}/roe.png", confidence=CONF_COOKING)
-
 frame = 0
 
 while True:
@@ -83,18 +95,30 @@ while True:
     frame += 1
     for food in foods:
         try:
-            for new_box in pag.locateAllOnScreen(
-                f"{PATH_FOOD}/{food}.png", confidence=CONF_RELAXED
+            for box in loas(
+                f"{PATH_FOOD}/{food}.png", confidence=CONF_RELAXED, region=bubbles
             ):
                 if not any(
-                    new_box.left - 25 < c.box.left < new_box.left + 25
-                    for c in customers
+                    box.left - 25 < c.box.left < box.left + 25 for c in customers
                 ):
-                    customers.append(Customer(new_box, food, None))
+                    customers.append(Customer(box, food, None))
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
             rprint(f"[blue]No {food} found.")
 
     # TODO: assure that there's enough ingredients before cooking
+    for ing_img in os.listdir("screenshots/ingredients"):
+        try:
+            ing_loc = pag.locateOnScreen(
+                f"screenshots/ingredients/{ing_img}",
+                confidence=CONF_INGREDIENTS,
+                region=panel,
+            )
+            ing_name = ing_img.split(sep="-")[0]
+            rprint(f"[green]{ing_img} found.")
+
+            pag.click(phone)
+        except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+            rprint(f"[blue]No {ing_img} found.")
 
     # Cook for a customer
     if any(not customer.is_handled for customer in customers):
@@ -128,12 +152,12 @@ while True:
 
     # Removing dishes and turds
     try:
-        for dish in pag.locateAllOnScreen(
-            f"{PATH_COOKING}/dish.png", confidence=CONF_DISHES
+        for dish in loas(
+            f"{PATH_COOKING}/dish.png", confidence=CONF_DISHES, region=deck
         ):
             pag.click(dish)
-        for turd in pag.locateAllOnScreen(
-            f"{PATH_COOKING}/turd.png", confidence=CONF_DISHES
+        for turd in loas(
+            f"{PATH_COOKING}/turd.png", confidence=CONF_DISHES, region=belt
         ):
             pag.click(turd)
     except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
