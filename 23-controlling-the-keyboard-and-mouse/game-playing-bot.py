@@ -21,7 +21,7 @@ CONF_COOKING = 0.95
 CONF_DISHES = 0.70
 CONF_INGREDIENTS = 0.95
 CONF_RELAXED = 0.6
-INF = 1_000
+INF = 3
 PATH_COOKING = "screenshots/cooking"
 PATH_FOOD = "screenshots/food"
 PATH_LAUNCH = "screenshots/launch"
@@ -44,19 +44,20 @@ pag.hotkey("ctrl", "a")
 pag.press("del")
 pag.write("https://armorgames.com/play/124/sushi-go-round")
 pag.press("enter")
-pag.sleep(1)
+pag.sleep(2.5)
 
 play_game = pag.locateOnScreen(f"{PATH_LAUNCH}/play-game.png", confidence=CONF)
 pag.click(play_game)
-pag.sleep(5)
+pag.sleep(7.5)
+pag.click(play_game)
 pag.click(play_game)
 pag.sleep(2.5)
 
-sound = pag.locateOnScreen(f"{PATH_LAUNCH}/sound.png", confidence=CONF)
-pag.click(sound)
+# sound = pag.locateOnScreen(f"{PATH_LAUNCH}/sound.png", confidence=CONF)
+# pag.click(sound)
 
-play = pag.locateOnScreen(f"{PATH_LAUNCH}/purple-play.png", confidence=CONF)
-pag.click(play)
+# play = pag.locateOnScreen(f"{PATH_LAUNCH}/purple-play.png", confidence=CONF)
+# pag.click(play)
 
 skip = pag.locateOnScreen(
     f"{PATH_LAUNCH}/yellow-skip.png", confidence=CONF, minSearchTime=2
@@ -71,28 +72,31 @@ pag.sleep(1)
 
 # Game loop
 def order(ingredient: str, ingredients: dict[str, int]):
-    if ingredient == "rice":
-        menu = pag.locateOnScreen(
-            f"{PATH_ORDER}/rice-menu.png", confidence=CONF, minSearchTime=INF
+    try:
+        if ingredient == "rice":
+            menu = pag.locateOnScreen(f"{PATH_ORDER}/rice-menu.png", confidence=CONF)
+        else:
+            menu = pag.locateOnScreen(f"{PATH_ORDER}/topping-menu.png", confidence=CONF)
+        pag.click(menu)
+        order = pag.locateOnScreen(
+            f"{PATH_ORDER}/{ingredient}-order.png", confidence=CONF
         )
-    else:
-        menu = pag.locateOnScreen(
-            f"{PATH_ORDER}/topping-menu.png", confidence=CONF, minSearchTime=INF
+        pag.click(order)
+        delivery = pag.locateOnScreen(
+            f"{PATH_ORDER}/delivery-free.png", confidence=CONF
         )
-    pag.click(menu)
-    order = pag.locateOnScreen(
-        f"{PATH_ORDER}/{ingredient}-order.png", confidence=CONF, minSearchTime=INF
-    )
-    pag.click(order)
-    delivery = pag.locateOnScreen(
-        f"{PATH_ORDER}/delivery-free.png", confidence=CONF, minSearchTime=INF
-    )
-    pag.click(delivery)
+        pag.click(delivery)
 
-    if ingredient in {"rice", "nori", "roe"}:
-        ingredients[ingredient] += 10
-    else:
-        ingredients[ingredient] += 5
+        if ingredient in {"rice", "nori", "roe"}:
+            ingredients[ingredient] += 10
+        else:
+            ingredients[ingredient] += 5
+        return True
+    except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+        close = pag.locateOnScreen(f"{PATH_ORDER}/close.png", confidence=CONF)
+        pag.click(close)
+        pag.sleep(2)
+        return False
 
 
 customers: deque[Customer] = deque()
@@ -158,8 +162,9 @@ while True:
         for ingredient, qty in [(i, q) for i, q in ingredients.items() if q < 2]:
             rprint(f"[red]No more {ingredient}")
             pag.click(phone)
-            pag.sleep(1)
-            order(ingredient, ingredients)
+
+            while not (status := order(ingredient, ingredients)):
+                status = order(ingredient, ingredients)
         pag.sleep(TIME_DELIVERY)
 
     # Cook for a customer
@@ -217,10 +222,14 @@ while True:
 
     # Removing dishes and turds
     try:
-        for dish in loas(
-            f"{PATH_COOKING}/dish.png", confidence=CONF_DISHES, region=deck
+        for dish_purple in loas(
+            f"{PATH_COOKING}/dish-purple.png", confidence=CONF_DISHES, region=deck
         ):
-            pag.click(dish)
+            pag.click(dish_purple)
+        for dish_blue in loas(
+            f"{PATH_COOKING}/dish-blue.png", confidence=CONF_DISHES, region=deck
+        ):
+            pag.click(dish_blue)
         for turd in loas(
             f"{PATH_COOKING}/turd.png", confidence=CONF_DISHES, region=belt
         ):
