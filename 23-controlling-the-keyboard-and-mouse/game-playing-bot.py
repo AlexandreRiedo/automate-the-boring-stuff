@@ -21,13 +21,15 @@ CONF_COOKING = 0.95
 CONF_DISHES = 0.70
 CONF_INGREDIENTS = 0.95
 CONF_RELAXED = 0.6
+INF = 1_000
 PATH_COOKING = "screenshots/cooking"
 PATH_FOOD = "screenshots/food"
 PATH_LAUNCH = "screenshots/launch"
 PATH_ORDER = "screenshots/order"
 POLL = 0.5
 TIME_HANDLE = 25
-TIME_DELIVERY = 3
+TIME_DELIVERY = 6
+TIME_COOK = 1
 
 
 # Launching the game
@@ -68,12 +70,33 @@ pag.sleep(1)
 
 
 # Game loop
+def order(ingredient: str, ingredients: dict[str, int]):
+    if ingredient == "rice":
+        menu = pag.locateOnScreen(
+            f"{PATH_ORDER}/rice-menu.png", confidence=CONF, minSearchTime=INF
+        )
+    else:
+        menu = pag.locateOnScreen(
+            f"{PATH_ORDER}/topping-menu.png", confidence=CONF, minSearchTime=INF
+        )
+    pag.click(menu)
+    order = pag.locateOnScreen(
+        f"{PATH_ORDER}/{ingredient}-order.png", confidence=CONF, minSearchTime=INF
+    )
+    pag.click(order)
+    delivery = pag.locateOnScreen(
+        f"{PATH_ORDER}/delivery-free.png", confidence=CONF, minSearchTime=INF
+    )
+    pag.click(delivery)
+
+    if ingredient in {"rice", "nori", "roe"}:
+        ingredients[ingredient] += 10
+    else:
+        ingredients[ingredient] += 5
+
+
 customers: deque[Customer] = deque()
-foods = {
-    "california",
-    "onigiri",
-    "gunkan",
-}
+foods = {"california", "onigiri", "gunkan", "salmon"}
 ingredients = {"shrimp": 5, "rice": 10, "nori": 10, "roe": 10, "salmon": 5, "unagi": 5}
 bubbles = pag.locateOnScreen(f"{PATH_COOKING}/bubbles.png", confidence=CONF)
 belt = pag.locateOnScreen(f"{PATH_COOKING}/belt.png", confidence=CONF)
@@ -84,10 +107,32 @@ makisu = pag.locateOnScreen(f"{PATH_COOKING}/makisu.png", confidence=CONF)
 nori = pag.locateOnScreen(f"{PATH_COOKING}/nori.png", confidence=CONF_COOKING)
 rice = pag.locateOnScreen(f"{PATH_COOKING}/rice.png", confidence=CONF_COOKING)
 roe = pag.locateOnScreen(f"{PATH_COOKING}/roe.png", confidence=CONF_COOKING)
+salmon = pag.locateOnScreen(f"{PATH_COOKING}/salmon.png", confidence=CONF_COOKING)
 
 
 frame = 0
 while True:
+    # Advance to the next level
+    try:
+        next_level = pag.locateOnScreen(
+            f"{PATH_LAUNCH}/next-level.png", confidence=CONF
+        )
+        pag.click(next_level)
+        pag.sleep(0.25)
+        pag.click(next_level)
+        ingredients = {
+            "shrimp": 5,
+            "rice": 10,
+            "nori": 10,
+            "roe": 10,
+            "salmon": 5,
+            "unagi": 5,
+        }
+        frame = 0
+        customers.clear()
+    except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+        pass
+
     rprint(f"\n=====[orange]Frame {frame}=====")
     for c in customers:
         rprint(f"{c}")
@@ -108,55 +153,13 @@ while True:
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
             pass
 
-    # TODO: assure that there's enough ingredients before cooking
+    # Order ingredients before cooking
     if any(qty < 2 for qty in ingredients.values()):
         for ingredient, qty in [(i, q) for i, q in ingredients.items() if q < 2]:
             rprint(f"[red]No more {ingredient}")
             pag.click(phone)
             pag.sleep(1)
-            if ingredient == "rice":
-                rice_menu = pag.locateOnScreen(
-                    f"{PATH_ORDER}/rice-menu.png", confidence=CONF, minSearchTime=2
-                )
-                pag.click(rice_menu)
-                rice_order = pag.locateOnScreen(
-                    f"{PATH_ORDER}/rice-order.png", confidence=CONF, minSearchTime=2
-                )
-                pag.click(rice_order)
-                delivery = pag.locateOnScreen(
-                    f"{PATH_ORDER}/delivery.png", confidence=CONF, minSearchTime=2
-                )
-                pag.click(delivery)
-                ingredients["rice"] += 10
-            elif ingredient == "nori":
-                nori_menu = pag.locateOnScreen(
-                    f"{PATH_ORDER}/topping-menu.png", confidence=CONF, minSearchTime=2
-                )
-                pag.click(nori_menu)
-                nori_order = pag.locateOnScreen(
-                    f"{PATH_ORDER}/nori-order.png", confidence=CONF, minSearchTime=2
-                )
-                pag.click(nori_order)
-                delivery = pag.locateOnScreen(
-                    f"{PATH_ORDER}/delivery.png", confidence=CONF, minSearchTime=2
-                )
-                pag.click(delivery)
-                ingredients["nori"] += 10
-            elif ingredient == "roe":
-                roe_menu = pag.locateOnScreen(
-                    f"{PATH_ORDER}/topping-menu.png", confidence=CONF, minSearchTime=2
-                )
-                pag.click(roe_menu)
-                roe_order = pag.locateOnScreen(
-                    f"{PATH_ORDER}/roe-order.png", confidence=CONF, minSearchTime=2
-                )
-                pag.click(roe_order)
-                delivery = pag.locateOnScreen(
-                    f"{PATH_ORDER}/delivery.png", confidence=CONF, minSearchTime=2
-                )
-                pag.click(delivery)
-                ingredients["roe"] += 10
-
+            order(ingredient, ingredients)
         pag.sleep(TIME_DELIVERY)
 
     # Cook for a customer
@@ -164,7 +167,7 @@ while True:
         customer = next(c for c in customers if not c.is_handled)
         match customer.food:
             case "california":
-                pag.click(rice)
+                pag.click(rice, duration=0.25)
                 pag.click(nori)
                 pag.click(roe)
 
@@ -172,22 +175,34 @@ while True:
                 ingredients["nori"] -= 1
                 ingredients["roe"] -= 1
             case "onigiri":
-                pag.click(rice)
+                pag.click(rice, duration=0.25)
+                pag.sleep(0.25)
                 pag.click(rice)
                 pag.click(nori)
 
                 ingredients["rice"] -= 2
                 ingredients["nori"] -= 1
             case "gunkan":
-                pag.click(rice)
+                pag.click(rice, duration=0.2)
                 pag.click(nori)
                 pag.click(roe)
+                pag.sleep(0.25)
                 pag.click(roe)
 
                 ingredients["rice"] -= 1
                 ingredients["nori"] -= 1
                 ingredients["roe"] -= 2
-        pag.sleep(0.5)
+            case "salmon":
+                pag.click(rice, duration=0.25)
+                pag.click(nori)
+                pag.click(salmon)
+                pag.sleep(0.25)
+                pag.click(salmon)
+
+                ingredients["rice"] -= 1
+                ingredients["nori"] -= 1
+                ingredients["salmon"] -= 2
+        pag.sleep(1)
         pag.click(makisu)
         customer.is_handled = True
         customer.handled_time = time.time()
