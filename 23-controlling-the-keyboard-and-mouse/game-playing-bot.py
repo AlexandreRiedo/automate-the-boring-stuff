@@ -37,12 +37,15 @@ def clickSafely(image: str, search_confidence=CONF):
         try:
             box = pag.locateOnScreen(image, confidence=search_confidence)
             pag.click(box)
+            rprint("[green]clickSafely worked")
             return True
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+            pag.sleep(1)
+            rprint("[red]clickSafely failed")
             return False
 
     while not x():
-        pag.sleep(1)
+        pass
 
 
 # Launching the game
@@ -85,21 +88,23 @@ pag.sleep(2)
 # Game Setup
 def order(ingredient: str, ingredients: dict[str, int]):
     try:
+        pag.click(phone)
+
         if ingredient == "rice":
             menu = pag.locateOnScreen(
-                f"{PATH_ORDER}/rice-menu.png", confidence=CONF_ORDER
+                f"{PATH_ORDER}/rice-menu.png", confidence=CONF_INGREDIENTS
             )
         else:
             menu = pag.locateOnScreen(
-                f"{PATH_ORDER}/topping-menu.png", confidence=CONF_ORDER
+                f"{PATH_ORDER}/topping-menu.png", confidence=CONF_INGREDIENTS
             )
         pag.click(menu)
         order = pag.locateOnScreen(
-            f"{PATH_ORDER}/{ingredient}-order.png", confidence=CONF_ORDER
+            f"{PATH_ORDER}/{ingredient}-order.png", confidence=CONF_INGREDIENTS
         )
         pag.click(order)
         delivery = pag.locateOnScreen(
-            f"{PATH_ORDER}/delivery-free.png", confidence=CONF_ORDER
+            f"{PATH_ORDER}/delivery-free.png", confidence=CONF_INGREDIENTS
         )
         pag.click(delivery)
 
@@ -109,13 +114,13 @@ def order(ingredient: str, ingredients: dict[str, int]):
             ingredients[ingredient] += 5
         return True
     except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-        clickSafely(f"{PATH_ORDER}/close.png")
+        clickSafely(f"{PATH_ORDER}/close.png", search_confidence=CONF_RELAXED)
         pag.sleep(2)
         return False
 
 
 customers: deque[Customer] = deque()
-foods = {"california", "onigiri", "gunkan", "salmon"}
+foods = {"california", "onigiri", "gunkan", "salmon", "shrimp"}
 ingredients = {"shrimp": 5, "rice": 10, "nori": 10, "roe": 10, "salmon": 5, "unagi": 5}
 bubbles = pag.locateOnScreen(f"{PATH_COOKING}/bubbles.png", confidence=CONF)
 belt = pag.locateOnScreen(f"{PATH_COOKING}/belt.png", confidence=CONF)
@@ -128,6 +133,8 @@ nori = pag.locateOnScreen(f"{PATH_COOKING}/nori.png", confidence=CONF_COOKING)
 rice = pag.locateOnScreen(f"{PATH_COOKING}/rice.png", confidence=CONF_COOKING)
 roe = pag.locateOnScreen(f"{PATH_COOKING}/roe.png", confidence=CONF_COOKING)
 salmon = pag.locateOnScreen(f"{PATH_COOKING}/salmon.png", confidence=CONF_COOKING)
+shrimp = pag.locateOnScreen(f"{PATH_COOKING}/shrimp.png", confidence=CONF_COOKING)
+unagi = pag.locateOnScreen(f"{PATH_COOKING}/unagi.png", confidence=CONF_COOKING)
 frame = 0
 
 
@@ -178,10 +185,10 @@ while True:
     if any(qty < 2 for qty in ingredients.values()):
         for ingredient, qty in [(i, q) for i, q in ingredients.items() if q < 2]:
             rprint(f"[red]No more {ingredient}")
-            pag.click(phone)
 
-            while not order(ingredient, ingredients):
-                pass
+            success = order(ingredient, ingredients)
+            while not success:
+                success = order(ingredient, ingredients)
         pag.sleep(TIME_DELIVERY)
 
     # Cook for a customer
@@ -224,6 +231,16 @@ while True:
                 ingredients["rice"] -= 1
                 ingredients["nori"] -= 1
                 ingredients["salmon"] -= 2
+            case "shrimp":
+                pag.click(rice, duration=0.25)
+                pag.click(nori)
+                pag.click(shrimp)
+                pag.sleep(0.25)
+                pag.click(shrimp)
+
+                ingredients["rice"] -= 1
+                ingredients["nori"] -= 1
+                ingredients["shrimp"] -= 2
         pag.sleep(0.5)
         pag.click(makisu)
         pag.sleep(1)
@@ -246,9 +263,16 @@ while True:
         ):
             pag.click(dish_purple)
         for dish_blue in loas(
-            f"{PATH_COOKING}/dish-blue.png",
-            confidence=CONF_RELAXED,
-            region=(deck.left - 50, deck.top - 50, deck.width + 100, deck.height + 100),
+            f"{PATH_COOKING}/dish-blue-big.png",
+            confidence=0.65,
+            region=deck,
+        ):
+            pag.click(dish_blue)
+        # TODO: Fix this!
+        for dish_blue in loas(
+            f"{PATH_COOKING}/dish-blue-small.png",
+            confidence=0.65,
+            region=deck,
         ):
             pag.click(dish_blue)
         for turd in loas(
