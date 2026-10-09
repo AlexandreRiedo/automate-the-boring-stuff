@@ -130,8 +130,19 @@ def order(ingredient: str, ingredients: dict[str, int]):
         return False
 
 
+def clean_dishes(img_path):
+    try:
+        for item in reduced_loas(
+            img_path=img_path, confidence=CONF_DISHES, region=deck
+        ):
+            pag.click(item)
+        rprint(f"[blue]{img_path.split('/')[-1]} dishes found.")
+    except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+        pass
+
+
 customers: deque[Customer] = deque()
-foods = {"california", "onigiri", "gunkan", "salmon", "shrimp"}
+foods = {"california", "onigiri", "gunkan", "salmon", "shrimp", "unagi"}
 ingredients = {"shrimp": 5, "rice": 10, "nori": 10, "roe": 10, "salmon": 5, "unagi": 5}
 bubbles = pag.locateOnScreen(f"{PATH_COOKING}/bubbles.png", confidence=CONF)
 belt = pag.locateOnScreen(f"{PATH_COOKING}/belt.png", confidence=CONF)
@@ -252,6 +263,16 @@ while True:
                 ingredients["rice"] -= 1
                 ingredients["nori"] -= 1
                 ingredients["shrimp"] -= 2
+            case "unagi":
+                pag.click(rice, duration=0.25)
+                pag.click(nori)
+                pag.click(unagi)
+                pag.sleep(0.25)
+                pag.click(unagi)
+
+                ingredients["rice"] -= 1
+                ingredients["nori"] -= 1
+                ingredients["unagi"] -= 2
         pag.sleep(0.5)
         pag.click(makisu)
         pag.sleep(1)
@@ -268,27 +289,7 @@ while True:
         customers.popleft()
 
     # Removing dishes and turds
-    try:
-        for dish_purple in reduced_loas(
-            f"{PATH_COOKING}/dish-purple.png", confidence=CONF_DISHES, region=deck
-        ):
-            pag.click(dish_purple)
-        for dish_blue in reduced_loas(
-            f"{PATH_COOKING}/dish-blue-big.png",
-            confidence=0.6,
-            region=deck,
-        ):
-            pag.click(dish_blue)
-        for dish_blue in reduced_loas(
-            f"{PATH_COOKING}/dish-blue-small.png",
-            confidence=0.6,
-            region=deck,
-        ):
-            pag.click(dish_blue)
-        for turd in reduced_loas(
-            f"{PATH_COOKING}/turd.png", confidence=CONF_DISHES, region=belt
-        ):
-            pag.click(turd)
-        rprint("[blue]Dishes or turds found.")
-    except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-        pass
+    clean_dishes(f"{PATH_COOKING}/dish-purple.png")
+    clean_dishes(f"{PATH_COOKING}/dish-blue-big.png")
+    clean_dishes(f"{PATH_COOKING}/dish-blue-small.png")
+    clean_dishes(f"{PATH_COOKING}/turd.png")
