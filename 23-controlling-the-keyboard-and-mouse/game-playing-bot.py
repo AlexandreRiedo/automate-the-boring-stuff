@@ -48,6 +48,17 @@ def clickSafely(image: str, search_confidence=CONF):
         pass
 
 
+def reduced_loas(img_path, confidence, region):
+    res = []
+    for box in loas(img_path, confidence=confidence, region=region):
+        if not any(
+            abs(other.left - box.left) < 20 or abs(other.top - box.top) < 20
+            for other in res
+        ):
+            res.append(box)
+    return res
+
+
 # Launching the game
 def launch():
     firefox = pag.getWindowsWithTitle("Firefox")[0]  # pyright: ignore[reportAttributeAccessIssue]
@@ -212,7 +223,7 @@ while True:
                 ingredients["rice"] -= 2
                 ingredients["nori"] -= 1
             case "gunkan":
-                pag.click(rice, duration=0.2)
+                pag.click(rice, duration=0.25)
                 pag.click(nori)
                 pag.click(roe)
                 pag.sleep(0.25)
@@ -258,24 +269,23 @@ while True:
 
     # Removing dishes and turds
     try:
-        for dish_purple in loas(
+        for dish_purple in reduced_loas(
             f"{PATH_COOKING}/dish-purple.png", confidence=CONF_DISHES, region=deck
         ):
             pag.click(dish_purple)
-        for dish_blue in loas(
+        for dish_blue in reduced_loas(
             f"{PATH_COOKING}/dish-blue-big.png",
-            confidence=0.65,
+            confidence=0.6,
             region=deck,
         ):
             pag.click(dish_blue)
-        # TODO: Fix this!
-        for dish_blue in loas(
+        for dish_blue in reduced_loas(
             f"{PATH_COOKING}/dish-blue-small.png",
-            confidence=0.65,
+            confidence=0.6,
             region=deck,
         ):
             pag.click(dish_blue)
-        for turd in loas(
+        for turd in reduced_loas(
             f"{PATH_COOKING}/turd.png", confidence=CONF_DISHES, region=belt
         ):
             pag.click(turd)
