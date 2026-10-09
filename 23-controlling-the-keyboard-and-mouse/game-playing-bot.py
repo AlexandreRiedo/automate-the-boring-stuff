@@ -33,44 +33,56 @@ TIME_COOK = 1
 
 
 # Launching the game
-firefox = pag.getWindowsWithTitle("Firefox")[0]  # pyright: ignore[reportAttributeAccessIssue]
-firefox.activate()
-firefox.maximize()
-pag.sleep(1)
+def launch():
+    firefox = pag.getWindowsWithTitle("Firefox")[0]  # pyright: ignore[reportAttributeAccessIssue]
+    firefox.activate()
+    firefox.maximize()
+    pag.sleep(1)
 
-firefox_search = (893, 76)
-pag.click(firefox_search)
-pag.hotkey("ctrl", "a")
-pag.press("del")
-pag.write("https://armorgames.com/play/124/sushi-go-round")
-pag.press("enter")
-pag.sleep(2.5)
+    firefox_search = (893, 76)
+    pag.click(firefox_search)
+    pag.hotkey("ctrl", "a")
+    pag.press("del")
+    pag.write("https://armorgames.com/play/124/sushi-go-round")
+    pag.press("enter")
+    pag.sleep(2.5)
 
-play_game = pag.locateOnScreen(f"{PATH_LAUNCH}/play-game.png", confidence=CONF)
-pag.click(play_game)
-pag.sleep(7.5)
-pag.click(play_game)
-pag.click(play_game)
-pag.sleep(2.5)
+    play_game = pag.locateOnScreen(f"{PATH_LAUNCH}/play-game.png", confidence=CONF)
+    pag.click(play_game)
+    pag.sleep(7.5)
+    pag.click(play_game)
+    pag.click(play_game)
+    pag.sleep(2.5)
 
-# sound = pag.locateOnScreen(f"{PATH_LAUNCH}/sound.png", confidence=CONF)
-# pag.click(sound)
+    skip = pag.locateOnScreen(
+        f"{PATH_LAUNCH}/yellow-skip.png", confidence=CONF, minSearchTime=2
+    )
+    pag.click(skip)
+    pag.sleep(0.5)
 
-# play = pag.locateOnScreen(f"{PATH_LAUNCH}/purple-play.png", confidence=CONF)
-# pag.click(play)
-
-skip = pag.locateOnScreen(
-    f"{PATH_LAUNCH}/yellow-skip.png", confidence=CONF, minSearchTime=2
-)
-pag.click(skip)
-pag.sleep(0.5)
-
-start_game = pag.locateOnScreen(f"{PATH_LAUNCH}/start-game.png", confidence=CONF)
-pag.click(start_game)
-pag.sleep(1)
+    start_game = pag.locateOnScreen(f"{PATH_LAUNCH}/start-game.png", confidence=CONF)
+    pag.click(start_game)
+    pag.sleep(1)
 
 
-# Game loop
+pag.sleep(2)
+# launch()
+
+
+# Game Setup
+def clickSafely(image: str, search_confidence=CONF):
+    def x():
+        try:
+            box = pag.locateOnScreen(image, confidence=search_confidence)
+            pag.click(box)
+            return True
+        except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+            return False
+
+    while not x:
+        pass
+
+
 def order(ingredient: str, ingredients: dict[str, int]):
     try:
         if ingredient == "rice":
@@ -104,7 +116,7 @@ foods = {"california", "onigiri", "gunkan", "salmon"}
 ingredients = {"shrimp": 5, "rice": 10, "nori": 10, "roe": 10, "salmon": 5, "unagi": 5}
 bubbles = pag.locateOnScreen(f"{PATH_COOKING}/bubbles.png", confidence=CONF)
 belt = pag.locateOnScreen(f"{PATH_COOKING}/belt.png", confidence=CONF)
-deck = pag.locateOnScreen(f"{PATH_COOKING}/deck.png", confidence=CONF)
+deck = pag.locateOnScreen(f"{PATH_COOKING}/deck-V2.png", confidence=CONF)
 panel = pag.locateOnScreen(f"{PATH_COOKING}/panel.png", confidence=CONF)
 phone = pag.locateOnScreen(f"{PATH_ORDER}/phone.png", confidence=CONF)
 makisu = pag.locateOnScreen(f"{PATH_COOKING}/makisu.png", confidence=CONF)
@@ -112,9 +124,10 @@ nori = pag.locateOnScreen(f"{PATH_COOKING}/nori.png", confidence=CONF_COOKING)
 rice = pag.locateOnScreen(f"{PATH_COOKING}/rice.png", confidence=CONF_COOKING)
 roe = pag.locateOnScreen(f"{PATH_COOKING}/roe.png", confidence=CONF_COOKING)
 salmon = pag.locateOnScreen(f"{PATH_COOKING}/salmon.png", confidence=CONF_COOKING)
-
-
 frame = 0
+
+
+# Game loop
 while True:
     # Advance to the next level
     try:
@@ -163,8 +176,8 @@ while True:
             rprint(f"[red]No more {ingredient}")
             pag.click(phone)
 
-            while not (status := order(ingredient, ingredients)):
-                status = order(ingredient, ingredients)
+            while not order(ingredient, ingredients):
+                pass
         pag.sleep(TIME_DELIVERY)
 
     # Cook for a customer
@@ -207,8 +220,10 @@ while True:
                 ingredients["rice"] -= 1
                 ingredients["nori"] -= 1
                 ingredients["salmon"] -= 2
-        pag.sleep(1)
+        pag.sleep(0.5)
         pag.click(makisu)
+        pag.sleep(1)
+        clickSafely(f"{PATH_COOKING}/makisu.png")
         customer.is_handled = True
         customer.handled_time = time.time()
 
