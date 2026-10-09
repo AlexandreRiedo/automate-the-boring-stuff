@@ -7,19 +7,11 @@ import pyscreeze
 from pyautogui import locateAllOnScreen as loas
 from rich import print as rprint
 
-
-@dataclass
-class Customer:
-    box: pyscreeze.Box
-    food: str
-    handled_time: float | None
-    is_handled: bool = False
-
-
 CONF = 0.8
 CONF_COOKING = 0.95
 CONF_DISHES = 0.70
 CONF_INGREDIENTS = 0.95
+CONF_ORDER = 0.9
 CONF_RELAXED = 0.6
 INF = 3
 PATH_COOKING = "screenshots/cooking"
@@ -30,6 +22,27 @@ POLL = 0.5
 TIME_HANDLE = 25
 TIME_DELIVERY = 6
 TIME_COOK = 1
+
+
+@dataclass
+class Customer:
+    box: pyscreeze.Box
+    food: str
+    handled_time: float | None
+    is_handled: bool = False
+
+
+def clickSafely(image: str, search_confidence=CONF):
+    def x():
+        try:
+            box = pag.locateOnScreen(image, confidence=search_confidence)
+            pag.click(box)
+            return True
+        except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+            return False
+
+    while not x():
+        pag.sleep(1)
 
 
 # Launching the game
@@ -70,32 +83,23 @@ pag.sleep(2)
 
 
 # Game Setup
-def clickSafely(image: str, search_confidence=CONF):
-    def x():
-        try:
-            box = pag.locateOnScreen(image, confidence=search_confidence)
-            pag.click(box)
-            return True
-        except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-            return False
-
-    while not x:
-        pass
-
-
 def order(ingredient: str, ingredients: dict[str, int]):
     try:
         if ingredient == "rice":
-            menu = pag.locateOnScreen(f"{PATH_ORDER}/rice-menu.png", confidence=CONF)
+            menu = pag.locateOnScreen(
+                f"{PATH_ORDER}/rice-menu.png", confidence=CONF_ORDER
+            )
         else:
-            menu = pag.locateOnScreen(f"{PATH_ORDER}/topping-menu.png", confidence=CONF)
+            menu = pag.locateOnScreen(
+                f"{PATH_ORDER}/topping-menu.png", confidence=CONF_ORDER
+            )
         pag.click(menu)
         order = pag.locateOnScreen(
-            f"{PATH_ORDER}/{ingredient}-order.png", confidence=CONF
+            f"{PATH_ORDER}/{ingredient}-order.png", confidence=CONF_ORDER
         )
         pag.click(order)
         delivery = pag.locateOnScreen(
-            f"{PATH_ORDER}/delivery-free.png", confidence=CONF
+            f"{PATH_ORDER}/delivery-free.png", confidence=CONF_ORDER
         )
         pag.click(delivery)
 
@@ -105,8 +109,7 @@ def order(ingredient: str, ingredients: dict[str, int]):
             ingredients[ingredient] += 5
         return True
     except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-        close = pag.locateOnScreen(f"{PATH_ORDER}/close.png", confidence=CONF)
-        pag.click(close)
+        clickSafely(f"{PATH_ORDER}/close.png")
         pag.sleep(2)
         return False
 
@@ -116,7 +119,8 @@ foods = {"california", "onigiri", "gunkan", "salmon"}
 ingredients = {"shrimp": 5, "rice": 10, "nori": 10, "roe": 10, "salmon": 5, "unagi": 5}
 bubbles = pag.locateOnScreen(f"{PATH_COOKING}/bubbles.png", confidence=CONF)
 belt = pag.locateOnScreen(f"{PATH_COOKING}/belt.png", confidence=CONF)
-deck = pag.locateOnScreen(f"{PATH_COOKING}/deck-V2.png", confidence=CONF)
+deck = pag.locateOnScreen(f"{PATH_COOKING}/deck.png", confidence=CONF)
+assert deck is not None
 panel = pag.locateOnScreen(f"{PATH_COOKING}/panel.png", confidence=CONF)
 phone = pag.locateOnScreen(f"{PATH_ORDER}/phone.png", confidence=CONF)
 makisu = pag.locateOnScreen(f"{PATH_COOKING}/makisu.png", confidence=CONF)
@@ -242,7 +246,9 @@ while True:
         ):
             pag.click(dish_purple)
         for dish_blue in loas(
-            f"{PATH_COOKING}/dish-blue.png", confidence=CONF_DISHES, region=deck
+            f"{PATH_COOKING}/dish-blue.png",
+            confidence=CONF_RELAXED,
+            region=(deck.left - 50, deck.top - 50, deck.width + 100, deck.height + 100),
         ):
             pag.click(dish_blue)
         for turd in loas(
