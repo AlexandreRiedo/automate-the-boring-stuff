@@ -8,6 +8,8 @@ import pyscreeze
 from pyautogui import locateAllOnScreen as loas
 from rich import print as rprint
 
+COLOR_BROWN = (121, 60, 4)
+COLOR_ORANGE = (255, 106, 12)
 CONF = 0.8
 CONF_COOKING = 0.95
 CONF_DISHES = 0.70
@@ -53,7 +55,7 @@ def reduced_loas(img_path, confidence, region):
     res = []
     for box in loas(img_path, confidence=confidence, region=region):
         if not any(
-            abs(other.left - box.left) < 20 or abs(other.top - box.top) < 20
+            abs(other.left - box.left) < 50 or abs(other.top - box.top) < 50
             for other in res
         ):
             res.append(box)
@@ -142,18 +144,27 @@ def clean_dishes(img_path, region):
         pass
 
 
-def contains_orange(box):
+def contains_color(box, color):
     return any(
-        pag.pixelMatchesColor(x, y, (255, 106, 12))
+        pag.pixelMatchesColor(x, y, color)
         for x, y in itertools.product(
-            range(box.left, box.left + box.width + 1),
-            range(box.top, box.top + box.height + 1),
+            range(box.left + 2, box.left + box.width // 4 + 1),
+            range(box.top - 3 + box.height // 2, box.top + 3 + box.height // 2),
         )
     )
 
 
 customers: deque[Customer] = deque()
-foods = {"california", "onigiri", "gunkan", "salmon", "shrimp", "unagi", "dragon"}
+foods = {
+    "california",
+    "onigiri",
+    "gunkan",
+    "salmon",
+    "shrimp",
+    "unagi",
+    "dragon",
+    "combo",
+}
 ingredients = {"shrimp": 5, "rice": 10, "nori": 10, "roe": 10, "salmon": 5, "unagi": 5}
 bubbles = pag.locateOnScreen(f"{PATH_COOKING}/bubbles.png", confidence=CONF)
 belt = pag.locateOnScreen(f"{PATH_COOKING}/belt.png", confidence=CONF)
@@ -183,7 +194,7 @@ while True:
         pag.click(next_level)
         pag.sleep(0.25)
 
-        # If you the level has been failed, retry
+        # If the level has been failed, retry
         try:
             fail = pag.locateOnScreen(
                 f"{PATH_LAUNCH}/fail-continue.png", confidence=CONF
@@ -220,16 +231,16 @@ while True:
     for food in foods:
         try:
             for box in reduced_loas(
-                f"{PATH_FOOD}/{food}.png", confidence=0.80, region=bubbles
+                img_path=f"{PATH_FOOD}/{food}.png", confidence=0.825, region=bubbles
             ):
                 # Avoid collisions
                 if not any(
                     box.left - 25 < c.box.left < box.left + 25 for c in customers
                 ):
                     # Differentiate between shrimp and unagi
-                    if food == "unagi" and contains_orange(box):
+                    if food == "unagi" and contains_color(box, COLOR_ORANGE):
                         continue
-                    if food == "shrimp" and not contains_orange(box):
+                    if food == "shrimp" and contains_color(box, COLOR_BROWN):
                         continue
 
                     customers.append(Customer(box, food, None))
@@ -320,6 +331,21 @@ while True:
                 ingredients["nori"] -= 1
                 ingredients["roe"] -= 1
                 ingredients["unagi"] -= 2
+            case "combo":
+                pag.click(rice, duration=0.25)
+                pag.click(rice)
+                pag.click(nori)
+                pag.click(roe)
+                pag.click(salmon)
+                pag.click(unagi)
+                pag.click(shrimp)
+
+                ingredients["rice"] -= 2
+                ingredients["nori"] -= 1
+                ingredients["roe"] -= 1
+                ingredients["salmon"] -= 1
+                ingredients["unagi"] -= 1
+                ingredients["shrimp"] -= 1
         pag.sleep(0.5)
         pag.click(makisu)
         pag.sleep(1)
