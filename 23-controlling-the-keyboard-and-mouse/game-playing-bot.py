@@ -1,4 +1,5 @@
 import itertools
+import sys
 import time
 from collections import deque
 from dataclasses import dataclass
@@ -22,7 +23,7 @@ PATH_FOOD = "screenshots/food"
 PATH_LAUNCH = "screenshots/launch"
 PATH_ORDER = "screenshots/order"
 POLL = 0.5
-TIME_HANDLE = 25
+TIME_HANDLE = 22
 TIME_DELIVERY = 6
 TIME_COOK = 1
 
@@ -61,10 +62,7 @@ def clickSafely(image: str, search_confidence=CONF):
 def reduced_loas(img_path, confidence, region):
     res = []
     for box in loas(img_path, confidence=confidence, region=region):
-        if not any(
-            abs(other.left - box.left) < 50 or abs(other.top - box.top) < 50
-            for other in res
-        ):
+        if not any(abs(other.left - box.left) < 25 for other in res):
             res.append(box)
     return res
 
@@ -102,8 +100,8 @@ def launch():
     pag.sleep(1)
 
 
-# pag.sleep(2)
-launch()
+pag.sleep(2)
+# launch()
 
 
 # Game Setup
@@ -220,7 +218,7 @@ def order(food: str, deliveries: list[Delivery], ingredients: dict[str, int]):
 def cook(customer, ingredients):
     match customer.food:
         case "california":
-            pag.click(rice)
+            pag.click(rice, duration=0.25)
             pag.click(nori)
             pag.click(roe)
 
@@ -228,7 +226,7 @@ def cook(customer, ingredients):
             ingredients["nori"] -= 1
             ingredients["roe"] -= 1
         case "combo":
-            pag.click(rice)
+            pag.click(rice, duration=0.25)
             pag.sleep(0.25)
             pag.click(rice)
             pag.click(nori)
@@ -244,7 +242,7 @@ def cook(customer, ingredients):
             ingredients["unagi"] -= 1
             ingredients["shrimp"] -= 1
         case "dragon":
-            pag.click(rice)
+            pag.click(rice, duration=0.25)
             pag.sleep(0.25)
             pag.click(rice)
             pag.click(nori)
@@ -258,7 +256,7 @@ def cook(customer, ingredients):
             ingredients["roe"] -= 1
             ingredients["unagi"] -= 2
         case "gunkan":
-            pag.click(rice)
+            pag.click(rice, duration=0.25)
             pag.click(nori)
             pag.click(roe)
             pag.sleep(0.25)
@@ -268,7 +266,7 @@ def cook(customer, ingredients):
             ingredients["nori"] -= 1
             ingredients["roe"] -= 2
         case "onigiri":
-            pag.click(rice)
+            pag.click(rice, duration=0.25)
             pag.sleep(0.25)
             pag.click(rice)
             pag.click(nori)
@@ -276,7 +274,7 @@ def cook(customer, ingredients):
             ingredients["rice"] -= 2
             ingredients["nori"] -= 1
         case "salmon":
-            pag.click(rice)
+            pag.click(rice, duration=0.25)
             pag.click(nori)
             pag.click(salmon)
             pag.sleep(0.25)
@@ -286,7 +284,7 @@ def cook(customer, ingredients):
             ingredients["nori"] -= 1
             ingredients["salmon"] -= 2
         case "shrimp":
-            pag.click(rice)
+            pag.click(rice, duration=0.25)
             pag.click(nori)
             pag.click(shrimp)
             pag.sleep(0.25)
@@ -296,7 +294,7 @@ def cook(customer, ingredients):
             ingredients["nori"] -= 1
             ingredients["shrimp"] -= 2
         case "unagi":
-            pag.click(rice)
+            pag.click(rice, duration=0.25)
             pag.click(nori)
             pag.click(unagi)
             pag.sleep(0.25)
@@ -383,6 +381,7 @@ def contains_color(box, color):
 def next_level():
     global ingredients
     global frame
+    global level
 
     try:
         next_level = pag.locateOnScreen(
@@ -390,8 +389,12 @@ def next_level():
         )
         pag.click(next_level)
         pag.sleep(0.25)
-        pag.click(next_level)
-        pag.sleep(0.25)
+        if level < 6:
+            pag.click(next_level)
+            pag.sleep(0.25)
+        else:
+            rprint("[pink]Sushi Go Round has been beaten !")
+            sys.exit(0)
 
         # If the level has been failed, retry
         try:
@@ -407,6 +410,7 @@ def next_level():
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
             pass
 
+        level += 1
         ingredients = {
             "shrimp": 5,
             "rice": 10,
@@ -448,6 +452,7 @@ shrimp = pag.locateOnScreen(f"{PATH_COOKING}/shrimp.png", confidence=CONF_COOKIN
 unagi = pag.locateOnScreen(f"{PATH_COOKING}/unagi.png", confidence=CONF_COOKING)
 assert deck is not None
 frame = 0
+level = 0
 
 
 # Game loop
@@ -471,7 +476,7 @@ while True:
     for food in foods:
         try:
             for box in reduced_loas(
-                img_path=f"{PATH_FOOD}/{food}.png", confidence=0.6, region=bubbles
+                img_path=f"{PATH_FOOD}/{food}.png", confidence=0.8, region=bubbles
             ):
                 # Avoid collisions
                 if not any(
