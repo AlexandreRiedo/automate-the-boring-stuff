@@ -79,6 +79,10 @@ screenshot*.png
 *.mp3
 *.wav
 
+# Video
+*.mp4
+*.mkv
+
 # ---- Scratch ----
 scratch/
 tmp/

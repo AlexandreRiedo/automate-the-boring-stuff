@@ -69,7 +69,7 @@ def reduced_loas(img_path, confidence, region):
 def launch():
     firefox = pag.getWindowsWithTitle("Firefox")[0]  # pyright: ignore[reportAttributeAccessIssue]
     firefox.activate()
-    firefox.maximize()
+    # firefox.maximize()
     pag.sleep(1)
 
     firefox_search = (893, 76)
