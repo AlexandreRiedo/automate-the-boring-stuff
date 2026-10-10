@@ -48,11 +48,9 @@ def clickSafely(image: str, search_confidence=CONF):
         try:
             box = pag.locateOnScreen(image, confidence=search_confidence)
             pag.click(box)
-            rprint("[green]clickSafely worked")
             return True
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
             pag.sleep(1)
-            rprint("[red]clickSafely failed")
             return False
 
     while not x():
@@ -100,8 +98,8 @@ def launch():
     pag.sleep(1)
 
 
-pag.sleep(2)
-# launch()
+# pag.sleep(2)
+launch()
 
 
 # Game Setup
@@ -389,11 +387,11 @@ def next_level():
         )
         pag.click(next_level)
         pag.sleep(0.25)
-        if level < 6:
+        if level < 7:
             pag.click(next_level)
             pag.sleep(0.25)
         else:
-            rprint("[pink]Sushi Go Round has been beaten !")
+            rprint("[magenta]Sushi Go Round has been beaten !")
             sys.exit(0)
 
         # If the level has been failed, retry
@@ -408,9 +406,8 @@ def next_level():
             pag.sleep(0.25)
             pag.click(next_level)
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-            pass
+            level += 1
 
-        level += 1
         ingredients = {
             "shrimp": 5,
             "rice": 10,
@@ -419,8 +416,9 @@ def next_level():
             "salmon": 5,
             "unagi": 5,
         }
-        frame = 0
+        frame = 1
         customers.clear()
+        deliveries.clear()
     except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
         pass
 
@@ -451,8 +449,8 @@ salmon = pag.locateOnScreen(f"{PATH_COOKING}/salmon.png", confidence=CONF_COOKIN
 shrimp = pag.locateOnScreen(f"{PATH_COOKING}/shrimp.png", confidence=CONF_COOKING)
 unagi = pag.locateOnScreen(f"{PATH_COOKING}/unagi.png", confidence=CONF_COOKING)
 assert deck is not None
-frame = 0
-level = 0
+frame = 1
+level = 1
 
 
 # Game loop
@@ -461,11 +459,11 @@ while True:
     next_level()
 
     # Debug
-    rprint(f"\n=====[orange]Frame {frame}=====")
+    rprint(f"\n=====[orange]Level {level} engine loop n°{frame}=====")
     rprint("Current customers:")
     for c in customers:
         rprint(f"{c}")
-    rprint("\nCurrent deliviers:")
+    rprint("\nCurrent deliveries:")
     for d in deliveries:
         rprint(f"{d}")
     rprint("")
@@ -507,111 +505,6 @@ while True:
             cook(customer, ingredients)
         else:
             order(customer.food, deliveries, ingredients)
-
-    # Order ingredients before cooking
-    # if any(qty < 2 for qty in ingredients.values()):
-    #     for ingredient, qty in [(i, q) for i, q in ingredients.items() if q < 2]:
-    #         rprint(f"[red]No more {ingredient}")
-
-    #         success = order(ingredient, ingredients)
-    #         while not success:
-    #             success = order(ingredient, ingredients)
-    #     pag.sleep(TIME_DELIVERY)
-
-    # Cook for a customer
-    # if any(not customer.is_handled for customer in customers):
-    #     customer = next(c for c in customers if not c.is_handled)
-    # match customer.food:
-    #     case "california":
-    #         pag.click(rice, duration=0.25)
-    #         pag.click(nori)
-    #         pag.click(roe)
-
-    #         ingredients["rice"] -= 1
-    #         ingredients["nori"] -= 1
-    #         ingredients["roe"] -= 1
-    #     case "onigiri":
-    #         pag.click(rice, duration=0.25)
-    #         pag.sleep(0.25)
-    #         pag.click(rice)
-    #         pag.click(nori)
-
-    #         ingredients["rice"] -= 2
-    #         ingredients["nori"] -= 1
-    #     case "gunkan":
-    #         pag.click(rice, duration=0.25)
-    #         pag.click(nori)
-    #         pag.click(roe)
-    #         pag.sleep(0.25)
-    #         pag.click(roe)
-
-    #         ingredients["rice"] -= 1
-    #         ingredients["nori"] -= 1
-    #         ingredients["roe"] -= 2
-    #     case "salmon":
-    #         pag.click(rice, duration=0.25)
-    #         pag.click(nori)
-    #         pag.click(salmon)
-    #         pag.sleep(0.25)
-    #         pag.click(salmon)
-
-    #         ingredients["rice"] -= 1
-    #         ingredients["nori"] -= 1
-    #         ingredients["salmon"] -= 2
-    #     case "shrimp":
-    #         pag.click(rice, duration=0.25)
-    #         pag.click(nori)
-    #         pag.click(shrimp)
-    #         pag.sleep(0.25)
-    #         pag.click(shrimp)
-
-    #         ingredients["rice"] -= 1
-    #         ingredients["nori"] -= 1
-    #         ingredients["shrimp"] -= 2
-    #     case "unagi":
-    #         pag.click(rice, duration=0.25)
-    #         pag.click(nori)
-    #         pag.click(unagi)
-    #         pag.sleep(0.25)
-    #         pag.click(unagi)
-
-    #         ingredients["rice"] -= 1
-    #         ingredients["nori"] -= 1
-    #         ingredients["unagi"] -= 2
-    #     case "dragon":
-    #         pag.click(rice, duration=0.25)
-    #         pag.click(rice)
-    #         pag.click(nori)
-    #         pag.click(roe)
-    #         pag.click(unagi)
-    #         pag.sleep(0.25)
-    #         pag.click(unagi)
-
-    #         ingredients["rice"] -= 2
-    #         ingredients["nori"] -= 1
-    #         ingredients["roe"] -= 1
-    #         ingredients["unagi"] -= 2
-    #     case "combo":
-    #         pag.click(rice, duration=0.25)
-    #         pag.click(rice)
-    #         pag.click(nori)
-    #         pag.click(roe)
-    #         pag.click(salmon)
-    #         pag.click(unagi)
-    #         pag.click(shrimp)
-
-    #         ingredients["rice"] -= 2
-    #         ingredients["nori"] -= 1
-    #         ingredients["roe"] -= 1
-    #         ingredients["salmon"] -= 1
-    #         ingredients["unagi"] -= 1
-    #         ingredients["shrimp"] -= 1
-    # pag.sleep(0.5)
-    # pag.click(makisu)
-    # pag.sleep(1)
-    # clickSafely(f"{PATH_COOKING}/makisu.png")
-    # customer.is_handled = True
-    # customer.handled_time = time.time()
 
     # Remove stale served customers
     while (
