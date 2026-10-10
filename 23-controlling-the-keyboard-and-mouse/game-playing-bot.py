@@ -1,3 +1,4 @@
+import itertools
 import time
 from collections import deque
 from dataclasses import dataclass
@@ -92,8 +93,8 @@ def launch():
     pag.sleep(1)
 
 
-# pag.sleep(2)
-launch()
+pag.sleep(2)
+# launch()
 
 
 # Game Setup
@@ -141,6 +142,16 @@ def clean_dishes(img_path, region):
         pass
 
 
+def contains_orange(box):
+    return any(
+        pag.pixelMatchesColor(x, y, (255, 106, 12))
+        for x, y in itertools.product(
+            range(box.left, box.left + box.width + 1),
+            range(box.top, box.top + box.height + 1),
+        )
+    )
+
+
 customers: deque[Customer] = deque()
 foods = {"california", "onigiri", "gunkan", "salmon", "shrimp", "unagi", "dragon"}
 ingredients = {"shrimp": 5, "rice": 10, "nori": 10, "roe": 10, "salmon": 5, "unagi": 5}
@@ -170,6 +181,22 @@ while True:
         pag.click(next_level)
         pag.sleep(0.25)
         pag.click(next_level)
+        pag.sleep(0.25)
+
+        # If you the level has been failed, retry
+        try:
+            fail = pag.locateOnScreen(
+                f"{PATH_LAUNCH}/fail-continue.png", confidence=CONF
+            )
+            pag.click(fail)
+            pag.sleep(0.25)
+            yes = pag.locateOnScreen(f"{PATH_LAUNCH}/yes.png", confidence=CONF)
+            pag.click(yes)
+            pag.sleep(0.25)
+            pag.click(next_level)
+        except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+            pass
+
         ingredients = {
             "shrimp": 5,
             "rice": 10,
@@ -192,13 +219,21 @@ while True:
     frame += 1
     for food in foods:
         try:
-            # BUG: Confused unagi and shrimp + Not good detection
-            for box in loas(f"{PATH_FOOD}/{food}.png", confidence=0.83, region=bubbles):
+            for box in reduced_loas(
+                f"{PATH_FOOD}/{food}.png", confidence=0.80, region=bubbles
+            ):
+                # Avoid collisions
                 if not any(
                     box.left - 25 < c.box.left < box.left + 25 for c in customers
                 ):
+                    # Differentiate between shrimp and unagi
+                    if food == "unagi" and contains_orange(box):
+                        continue
+                    if food == "shrimp" and not contains_orange(box):
+                        continue
+
                     customers.append(Customer(box, food, None))
-                    rprint(f"[blue]{food} found.")
+                    rprint(f"[blue]{food} found at {box=}")
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
             pass
 
