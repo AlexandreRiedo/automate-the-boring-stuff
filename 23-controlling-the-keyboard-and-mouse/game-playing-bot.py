@@ -92,8 +92,8 @@ def launch():
     pag.sleep(1)
 
 
-pag.sleep(2)
-# launch()
+# pag.sleep(2)
+launch()
 
 
 # Game Setup
@@ -130,10 +130,10 @@ def order(ingredient: str, ingredients: dict[str, int]):
         return False
 
 
-def clean_dishes(img_path):
+def clean_dishes(img_path, region):
     try:
         for item in reduced_loas(
-            img_path=img_path, confidence=CONF_DISHES, region=deck
+            img_path=img_path, confidence=CONF_DISHES, region=region
         ):
             pag.click(item)
         rprint(f"[blue]{img_path.split('/')[-1]} dishes found.")
@@ -142,12 +142,11 @@ def clean_dishes(img_path):
 
 
 customers: deque[Customer] = deque()
-foods = {"california", "onigiri", "gunkan", "salmon", "shrimp", "unagi"}
+foods = {"california", "onigiri", "gunkan", "salmon", "shrimp", "unagi", "dragon"}
 ingredients = {"shrimp": 5, "rice": 10, "nori": 10, "roe": 10, "salmon": 5, "unagi": 5}
 bubbles = pag.locateOnScreen(f"{PATH_COOKING}/bubbles.png", confidence=CONF)
 belt = pag.locateOnScreen(f"{PATH_COOKING}/belt.png", confidence=CONF)
 deck = pag.locateOnScreen(f"{PATH_COOKING}/deck.png", confidence=CONF)
-assert deck is not None
 panel = pag.locateOnScreen(f"{PATH_COOKING}/panel.png", confidence=CONF)
 phone = pag.locateOnScreen(f"{PATH_ORDER}/phone.png", confidence=CONF)
 makisu = pag.locateOnScreen(f"{PATH_COOKING}/makisu.png", confidence=CONF)
@@ -157,6 +156,7 @@ roe = pag.locateOnScreen(f"{PATH_COOKING}/roe.png", confidence=CONF_COOKING)
 salmon = pag.locateOnScreen(f"{PATH_COOKING}/salmon.png", confidence=CONF_COOKING)
 shrimp = pag.locateOnScreen(f"{PATH_COOKING}/shrimp.png", confidence=CONF_COOKING)
 unagi = pag.locateOnScreen(f"{PATH_COOKING}/unagi.png", confidence=CONF_COOKING)
+assert deck is not None
 frame = 0
 
 
@@ -192,9 +192,8 @@ while True:
     frame += 1
     for food in foods:
         try:
-            for box in loas(
-                f"{PATH_FOOD}/{food}.png", confidence=CONF_RELAXED, region=bubbles
-            ):
+            # BUG: Confused unagi and shrimp + Not good detection
+            for box in loas(f"{PATH_FOOD}/{food}.png", confidence=0.83, region=bubbles):
                 if not any(
                     box.left - 25 < c.box.left < box.left + 25 for c in customers
                 ):
@@ -273,6 +272,19 @@ while True:
                 ingredients["rice"] -= 1
                 ingredients["nori"] -= 1
                 ingredients["unagi"] -= 2
+            case "dragon":
+                pag.click(rice, duration=0.25)
+                pag.click(rice)
+                pag.click(nori)
+                pag.click(roe)
+                pag.click(unagi)
+                pag.sleep(0.25)
+                pag.click(unagi)
+
+                ingredients["rice"] -= 2
+                ingredients["nori"] -= 1
+                ingredients["roe"] -= 1
+                ingredients["unagi"] -= 2
         pag.sleep(0.5)
         pag.click(makisu)
         pag.sleep(1)
@@ -289,7 +301,8 @@ while True:
         customers.popleft()
 
     # Removing dishes and turds
-    clean_dishes(f"{PATH_COOKING}/dish-purple.png")
-    clean_dishes(f"{PATH_COOKING}/dish-blue-big.png")
-    clean_dishes(f"{PATH_COOKING}/dish-blue-small.png")
-    clean_dishes(f"{PATH_COOKING}/turd.png")
+    clean_dishes(f"{PATH_COOKING}/dish-purple.png", deck)
+    clean_dishes(f"{PATH_COOKING}/dish-blue-big.png", deck)
+    clean_dishes(f"{PATH_COOKING}/dish-blue-small.png", deck)
+    clean_dishes(f"{PATH_COOKING}/dish-red.png", deck)
+    clean_dishes(f"{PATH_COOKING}/turd.png", belt)
