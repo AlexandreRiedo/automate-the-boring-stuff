@@ -23,7 +23,7 @@ PATH_FOOD = "screenshots/food"
 PATH_LAUNCH = "screenshots/launch"
 PATH_ORDER = "screenshots/order"
 POLL = 0.5
-TIME_HANDLE = 22
+TIME_HANDLE = 20
 TIME_DELIVERY = 6
 TIME_COOK = 1
 
@@ -396,15 +396,26 @@ def next_level():
 
         # If the level has been failed, retry
         try:
+            pag.moveTo(200, 200)
+            pag.sleep(0.5)
+
             fail = pag.locateOnScreen(
-                f"{PATH_LAUNCH}/fail-continue.png", confidence=CONF
+                f"{PATH_LAUNCH}/fail-continue.png", confidence=CONF_RELAXED
             )
             pag.click(fail)
             pag.sleep(0.25)
-            yes = pag.locateOnScreen(f"{PATH_LAUNCH}/yes.png", confidence=CONF)
+
+            fail_two = pag.locateOnScreen(
+                f"{PATH_LAUNCH}/fail-continue-2.png", confidence=CONF_RELAXED
+            )
+            pag.click(fail_two)
+            pag.sleep(0.25)
+
+            yes = pag.locateOnScreen(f"{PATH_LAUNCH}/yes.png", confidence=CONF_RELAXED)
             pag.click(yes)
             pag.sleep(0.25)
-            pag.click(next_level)
+
+            pag.click(fail)
         except (pag.ImageNotFoundException, pyscreeze.ImageNotFoundException):
             level += 1
 
